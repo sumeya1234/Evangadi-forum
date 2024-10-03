@@ -1,6 +1,8 @@
 const dbConnection = require("../DB/dbConfig");
 const {StatusCodes} = require("http-status-codes");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+//--------------------------------------- Register Function------------------------------------------
 async function register(req,res){
     const { username, firstname, lastname, email, password } = req.body;
     if ( !username || !firstname || !lastname || !email || !password ){
@@ -32,14 +34,45 @@ async function register(req,res){
         console.log(error.message)
         return res
             .status(StatusCodes.INTERNAL_SERVER_ERROR)
-            .json({ msg: "Something went wrong" });
+            .json({ msg: "Something went wrong,Try again later" });
     }
     // res.send("Register user")
 }
+//--------------------------------------- Log in Function------------------------------------------
 async function login(req,res){
-    res.send("Log in user")
+    const { email, password } = req.body;
+    if (!email || !password) {
+        return res
+        .status(StatusCodes.BAD_REQUEST)
+        .json({ msg: "Please provide all required fields" });
+    }
+    try {
+        const [user] = await dbConnection.query("SELECT username, userid, password FROM users WHERE email = ?" , [email])
+        if (user.length == 0) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ msg : "Invalid Credential"})
+        }
+        // Comparing password
+        const isMatch= await bcrypt.compare(password, user[0].password);
+        if (!isMatch) {
+            return res.status(StatusCodes.BAD_REQUEST).json({ msg : "Invalid Credential" });
+        }
+        
+        // Generating token
+        const username = user[0].username;
+        const userid = user[0].userid;
+        const token = jwt.sign({ username , userid },'secret', { expiresIn: "3d" });
+            return res.status(StatusCodes.OK).json({ msg : "Logged in successfully", token : token });
+    } catch (error) {
+        console.log(error.message);
+        return res
+            .status(StatusCodes.INTERNAL_SERVER_ERROR)
+            .json({ msg: "Something went wrong, Try again later" });
+    }
 }
+//---------------------------------------Check user Function------------------------------------------
 async function checkUser(req,res){
-    res.send("Check user")
+    const username = req.user.username;
+    const userid = req.user.userid;
+    res.status(StatusCodes.OK).json({ msg : "Valid User", username, userid})
 }
 module.exports = {register, login, checkUser}
