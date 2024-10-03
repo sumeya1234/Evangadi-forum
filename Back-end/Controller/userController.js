@@ -15,12 +15,12 @@ async function register(req,res){
         // console.log(user[0].userid); 
         // console.log({user : });
         if (user.length > 0) {
-            return res.status(StatusCodes.BAD_REQUEST)
+            return res.status(StatusCodes.CONFLICT)
             .json({ msg : "You have already registered"});
         }
         if (password.length <= 8){
             return res.status(StatusCodes.BAD_REQUEST)
-            .json({ msg : "Password must be at least 8 characters"});
+            .json({ msg : "Password must be greater than 8 characters"});
         }
         // Password encryption
         const salt = await bcrypt.genSalt(10);
@@ -49,12 +49,12 @@ async function login(req,res){
     try {
         const [user] = await dbConnection.query("SELECT username, userid, password FROM users WHERE email = ?" , [email])
         if (user.length == 0) {
-            return res.status(StatusCodes.BAD_REQUEST).json({ msg : "Invalid Credential"})
+            return res.status(StatusCodes.BAD_REQUEST).json({ msg : "User not found"})
         }
         // Comparing password
         const isMatch= await bcrypt.compare(password, user[0].password);
         if (!isMatch) {
-            return res.status(StatusCodes.BAD_REQUEST).json({ msg : "Invalid Credential" });
+            return res.status(StatusCodes.BAD_REQUEST).json({ msg : "Invalid Password" });
         }
         
         // Generating token
