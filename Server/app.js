@@ -3,7 +3,9 @@ const express = require("express");
 const app = express();
 const port = 3030;
 const dbConnection = require("./DB/dbConfig");  // DB connection
+const cors = require("cors")
 
+app.use(cors())
 
 // User routes middleware file
 const userRoutes = require("./Routes/userRoute");
